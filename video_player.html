@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>健身视频播放器 - 9:16竖屏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .video-wrapper {
+            position: relative;
+            background: #000;
+            /* 9:16 竖屏比例 */
+            aspect-ratio: 9 / 16;
+            width: 100%;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 16px;
+            display: none;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .info-panel {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .info-value {
+            color: #6c757d;
+        }
+
+        .quality-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .quality-2k {
+            background: #28a745;
+            color: white;
+        }
+
+        .quality-1080p {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .quality-720p {
+            background: #ffc107;
+            color: black;
+        }
+
+        .video-list {
+            padding: 20px;
+        }
+
+        .video-list h2 {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .video-item {
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .video-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .video-item.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .video-item-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .video-item-url {
+            font-size: 11px;
+            opacity: 0.7;
+            word-break: break-all;
+        }
+
+        .error-message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 59, 48, 0.9);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 80%;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .controls-hint {
+            text-align: center;
+            padding: 15px;
+            color: #6c757d;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 0;
+            }
+            
+            .container {
+                max-width: 100%;
+                border-radius: 0;
+            }
+
+            .header h1 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>🏋️ 健身视频播放器</h1>
+            <p>自适应多码率 · 9:16竖屏 · 2K/1080p/720p</p>
+        </div>
+
+        <!-- 视频播放器 -->
+        <div class="video-wrapper">
+            <video id="video" 
+                   controls 
+                   playsinline 
+                   preload="metadata"
+                   poster="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 9 16'%3E%3Crect width='9' height='16' fill='%23000'/%3E%3Ctext x='50%25' y='50%25' font-size='2' fill='white' text-anchor='middle' dominant-baseline='middle'%3E▶%3C/text%3E%3C/svg%3E">
+                您的浏览器不支持视频播放
+            </video>
+            <div class="loading" id="loading">加载中...</div>
+            <div class="error-message" id="error"></div>
+        </div>
+
+        <!-- 视频信息 -->
+        <div class="info-panel" id="info-panel">
+            <div class="info-item">
+                <span class="info-label">当前视频</span>
+                <span class="info-value" id="current-video">JOGGING_IN_PLACE_lana</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">可用码率</span>
+                <span class="info-value">
+                    <span class="quality-badge quality-2k">2K</span>
+                    <span class="quality-badge quality-1080p">1080p</span>
+                    <span class="quality-badge quality-720p">720p</span>
+                </span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">播放状态</span>
+                <span class="info-value" id="status">就绪</span>
+            </div>
+        </div>
+
+        <div class="controls-hint">
+            💡 播放器会根据网络自动选择最佳画质
+        </div>
+
+        <!-- 视频列表 -->
+        <div class="video-list">
+            <h2>📺 视频列表</h2>
+            <div id="video-list-container"></div>
+        </div>
+    </div>
+
+    <!-- HLS.js 库 -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    
+    <script>
+        // 视频列表配置
+        const videos = [
+            {
+                name: 'JOGGING_IN_PLACE_lana',
+                title: '原地慢跑',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/JOGGING_IN_PLACE_lana/master.m3u8'
+            },
+            {
+                name: 'BACK_KICK_lana',
+                title: '后踢腿',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/BACK_KICK_lana/master.m3u8'
+            },
+            {
+                name: 'SQUAT_lana',
+                title: '深蹲',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/SQUAT_lana/master.m3u8'
+            },
+            {
+                name: 'WAIST_CIRCLES_lana',
+                title: '腰部绕圈',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/WAIST_CIRCLES_lana/master.m3u8'
+            },
+            {
+                name: '3_STEP_KNEE_TAP_lana',
+                title: '三步膝盖点',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/THREE_STEP_KNEE_TAP_lana/master.m3u8'
+            },
+            {
+                name: 'LATERAL_JUMPS_lana',
+                title: '侧向跳',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/LATERAL_JUMPS_lana/master.m3u8'
+            },
+            {
+                name: 'LUNGE_JUMPS_lana',
+                title: '弓步跳',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/LUNGE_JUMPS_lana/master.m3u8'
+            },
+            {
+                name: 'SIDE_STEP_CURTSY_lana',
+                title: '侧步屈膝礼',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/SIDE_STEP_CURTSY_lana/master.m3u8'
+            },
+            {
+                name: 'SPLIT_SQUAT_KNEE_UP_lana',
+                title: '分腿蹲膝盖提升',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/SPLIT_SQUAT_KNEE_UP_lana/master.m3u8'
+            },
+            {
+                name: 'SUMO_SQUAT_HEEL_RAISE_lana',
+                title: '相扑蹲提踵',
+                url: 'https://blobtest202405202004.blob.core.windows.net/stream-vedio/videos/SUMO_SQUAT_HEEL_RAISE_lana/master.m3u8'
+            }
+        ];
+
+        // DOM 元素
+        const video = document.getElementById('video');
+        const loading = document.getElementById('loading');
+        const errorEl = document.getElementById('error');
+        const statusEl = document.getElementById('status');
+        const currentVideoEl = document.getElementById('current-video');
+        const videoListContainer = document.getElementById('video-list-container');
+
+        let hls = null;
+        let currentVideoIndex = 0;
+
+        // 渲染视频列表
+        function renderVideoList() {
+            videoListContainer.innerHTML = videos.map((v, index) => `
+                <div class="video-item ${index === currentVideoIndex ? 'active' : ''}" 
+                     onclick="loadVideo(${index})">
+                    <div class="video-item-title">${index + 1}. ${v.title}</div>
+                    <div class="video-item-url">${v.name}</div>
+                </div>
+            `).join('');
+        }
+
+        // 加载视频
+        function loadVideo(index) {
+            const videoData = videos[index];
+            currentVideoIndex = index;
+            
+            // 更新 UI
+            currentVideoEl.textContent = videoData.name;
+            loading.classList.add('show');
+            errorEl.classList.remove('show');
+            statusEl.textContent = '加载中...';
+            renderVideoList();
+
+            // 清理旧的 HLS 实例
+            if (hls) {
+                hls.destroy();
+            }
+
+            // Safari 原生支持 HLS
+            if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                video.src = videoData.url;
+                video.load();
+                statusEl.textContent = '播放中 (Safari 原生)';
+                loading.classList.remove('show');
+            } 
+            // 其他浏览器使用 HLS.js
+            else if (window.Hls && Hls.isSupported()) {
+                hls = new Hls({
+                    debug: false,
+                    enableWorker: true,
+                    lowLatencyMode: false,
+                    backBufferLength: 90
+                });
+
+                hls.loadSource(videoData.url);
+                hls.attachMedia(video);
+
+                // 事件监听
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    loading.classList.remove('show');
+                    statusEl.textContent = '就绪';
+                    console.log('✅ HLS 播放列表加载成功');
+                });
+
+                hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
+                    const level = hls.levels[data.level];
+                    console.log(`📊 切换到: ${level.height}p`);
+                    statusEl.textContent = `播放中 (${level.height}p)`;
+                });
+
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    loading.classList.remove('show');
+                    if (data.fatal) {
+                        switch(data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                errorEl.textContent = '❌ 网络错误，正在重试...';
+                                errorEl.classList.add('show');
+                                statusEl.textContent = '网络错误';
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                errorEl.textContent = '❌ 媒体错误，正在恢复...';
+                                errorEl.classList.add('show');
+                                statusEl.textContent = '媒体错误';
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                errorEl.textContent = '❌ 播放失败，请刷新页面重试';
+                                errorEl.classList.add('show');
+                                statusEl.textContent = '播放失败';
+                                break;
+                        }
+                    }
+                });
+            } 
+            // 不支持
+            else {
+                errorEl.textContent = '❌ 当前浏览器不支持 HLS\n请使用 Chrome、Safari 或 Edge';
+                errorEl.classList.add('show');
+                statusEl.textContent = '不支持';
+                loading.classList.remove('show');
+            }
+        }
+
+        // 视频播放事件
+        video.addEventListener('play', () => {
+            statusEl.textContent = '播放中';
+        });
+
+        video.addEventListener('pause', () => {
+            statusEl.textContent = '已暂停';
+        });
+
+        video.addEventListener('ended', () => {
+            statusEl.textContent = '播放完成';
+            // 自动播放下一个
+            if (currentVideoIndex < videos.length - 1) {
+                setTimeout(() => loadVideo(currentVideoIndex + 1), 1000);
+            }
+        });
+
+        video.addEventListener('waiting', () => {
+            loading.classList.add('show');
+        });
+
+        video.addEventListener('playing', () => {
+            loading.classList.remove('show');
+            errorEl.classList.remove('show');
+        });
+
+        // 初始化
+        renderVideoList();
+        loadVideo(0);
+
+        // 键盘控制
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' && currentVideoIndex < videos.length - 1) {
+                loadVideo(currentVideoIndex + 1);
+            } else if (e.key === 'ArrowLeft' && currentVideoIndex > 0) {
+                loadVideo(currentVideoIndex - 1);
+            }
+        });
+    </script>
+</body>
+</html>
+
